@@ -1,0 +1,78 @@
+{
+  "submission": "/Users/e151299/Steerability_challenge/team_github/Steerability-Trust-issues-main/experiments/exp_rahul_001_nullspace_map/submission_nullspace_v1",
+  "ok": true,
+  "track": "white-box",
+  "errors": [],
+  "warnings": [],
+  "bundles": {
+    "Qwen/Qwen3.8-27B": {
+      "file": "Qwen__Qwen3.8-27B.spipe",
+      "size_bytes": 496603,
+      "methods": [
+        "state_control/nullspace_map"
+      ],
+      "track": "white-box",
+      "control_tracks": [
+        {
+          "method": "state_control/nullspace_map",
+          "enabled": true,
+          "track": "white-box",
+          "reason": "state control"
+        }
+      ],
+      "backend": "huggingface",
+      "backend_failures": {
+        "vllm": [
+          "NullSpaceMap is unsupported at generate on backend kind 'vllm': missing IN_PROCESS_TORCH; run this pipeline on the huggingface backend."
+        ],
+        "huggingface": []
+      }
+    },
+    "google/gemma-4-31B-it": {
+      "file": "google__gemma-4-31B-it.spipe",
+      "size_bytes": 521192,
+      "methods": [
+        "state_control/nullspace_map"
+      ],
+      "track": "white-box",
+      "control_tracks": [
+        {
+          "method": "state_control/nullspace_map",
+          "enabled": true,
+          "track": "white-box",
+          "reason": "state control"
+        }
+      ],
+      "backend": "huggingface",
+      "backend_failures": {
+        "vllm": [
+          "NullSpaceMap is unsupported at generate on backend kind 'vllm': missing IN_PROCESS_TORCH; run this pipeline on the huggingface backend."
+        ],
+        "huggingface": []
+      }
+    },
+    "ibm-granite/granite-4.2-30b": {
+      "file": "ibm-granite__granite-4.2-30b.spipe",
+      "size_bytes": 398344,
+      "methods": [
+        "state_control/nullspace_map"
+      ],
+      "track": "white-box",
+      "control_tracks": [
+        {
+          "method": "state_control/nullspace_map",
+          "enabled": true,
+          "track": "white-box",
+          "reason": "state control"
+        }
+      ],
+      "backend": "huggingface",
+      "backend_failures": {
+        "vllm": [
+          "NullSpaceMap is unsupported at generate on backend kind 'vllm': missing IN_PROCESS_TORCH; run this pipeline on the huggingface backend."
+        ],
+        "huggingface": []
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+COLAB RUN — quick start (total email size ~2 MB, well under 35 MB)
+
+In this package:
+  colab_cast_experiments.ipynb   the notebook
+  colab_cast_data.zip            the toolkit + code + data (upload this to the Colab session)
+  PROVENANCE.txt                 confirms every data source is public / self-authored
+  HOW_TO_RUN.txt                 this file
+
+Steps:
+  1. In Colab: File > Upload notebook  ->  colab_cast_experiments.ipynb
+  2. Runtime > Change runtime type > GPU: A100 (or L4)
+  3. Left panel key icon (Secrets) > add  HF_TOKEN = <your Hugging Face token>
+     (first click "Agree to access" on the model's Hugging Face page)
+  4. Drag colab_cast_data.zip into the Colab file panel, then run this in a cell:
+         !unzip -q colab_cast_data.zip -d /content
+     (creates /content/steerability-cast and /content/final_data, which the notebook expects)
+  5. Runtime > Run all. The final cell prints the comparison table
+     (baseline prompt vs CAST vs CAST + mild prompt).

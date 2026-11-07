@@ -1,0 +1,26 @@
+DATA PROVENANCE — all sources are public or self-authored (verified 2026-10-27)
+
+The rows in final_data/{train,eval}.jsonl are GENERATED from these sources only:
+
+- instructed_lie, concealment, confrontation_after_lie, pushback
+    Facts we authored ourselves (LLM-drafted, human-verified) — generic public knowledge
+    (capitals, basic science, history). The "secrets" are fabricated examples (e.g. RX-7730-DELTA),
+    not real values.
+- hint_acknowledgment
+    CommonsenseQA (Talmor et al., 2019) — public dataset (CC-BY-SA / research use).
+- sandbagging, sandbagging_stated
+    GSM8K (Cobbe et al., 2021) — public dataset (MIT).
+- feedback_sycophancy
+    Short poems / code / paragraphs we wrote ourselves.
+- harm_motivated_denial
+    Anthropic Alignment Science "Harm Pressure" pairs — publicly released for safety research.
+
+NOT included / NOT sent:
+- MASK or false_premise rows (measurement-only; excluded from supervision).
+- Any organizer private evaluation rows; any internal, confidential, or proprietary data.
+- Scan of the shipped data for "mastercard" / internal username / "proprietary" / "internal only" = 0 hits.
+
+Code and toolkit:
+- steerability/  = the Steerability toolkit, Apache-2.0, open source (github.com/IBM/AISteer360).
+- cast_config.py, cast_server.py, colab_cast_experiments.ipynb = written by our team
+  (local file paths removed from cast_config.py before packaging).

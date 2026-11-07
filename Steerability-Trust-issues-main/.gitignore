@@ -1,0 +1,21 @@
+# secrets
+.env
+*.token
+hf_token*
+
+# python and notebooks
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# large artifacts: keep on Google Drive or a private Hugging Face repo instead
+*.safetensors
+*.bin
+*.pt
+*.spipe
+activations/
+checkpoints/
+
+# os
+.DS_Store

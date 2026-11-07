@@ -1,0 +1,86 @@
+{
+ "model": "Qwen/Qwen3.8-27B",
+ "quantize": null,
+ "dtype": "torch.bfloat16",
+ "layers": [
+  32
+ ],
+ "lam": 1.0,
+ "null_frac": 0.6,
+ "alpha_rel": 0.1,
+ "normalize_dims": true,
+ "n_pairs": 950,
+ "n_benign": 3524,
+ "per_layer": {
+  "32": {
+   "rank": 12,
+   "alpha": 2.3255062103271484,
+   "null_dim": 3072,
+   "dim_norms": {
+    "concealment": 26.913288116455078,
+    "confrontation_after_lie": 12.451549530029297,
+    "fabricated_action": 8.428268432617188,
+    "fabricated_citation": 11.138489723205566,
+    "fabricated_entity": 11.828879356384277,
+    "feedback_sycophancy": 2.9427437782287598,
+    "harm_motivated_denial": 6.348940372467041,
+    "hint_acknowledgment": 4.017345905303955,
+    "instructed_lie": 8.7122163772583,
+    "pushback": 8.656427383422852,
+    "sandbagging": 1.3842164278030396,
+    "sandbagging_stated": 29.41522216796875
+   },
+   "normalized": true,
+   "r2_target_train": 0.9333416074514389,
+   "r2_pair_train": 0.23244380950927734,
+   "dose_train": 0.1476433128118515,
+   "pec_eval": {
+    "capability_instruction_following": 0.992,
+    "capability_knowledge": 0.9978,
+    "capability_problem_solving": 0.9987,
+    "capability_reasoning": 0.9993,
+    "guard_confidentiality_persona": 0.9963,
+    "guard_helpfulness": 0.9925,
+    "guard_over_conservativeness": 0.9962,
+    "guard_refusal": 0.9958
+   },
+   "leak_eval": {
+    "capability_instruction_following": 0.248,
+    "capability_knowledge": 0.129,
+    "capability_problem_solving": 0.097,
+    "capability_reasoning": 0.068,
+    "guard_confidentiality_persona": 0.155,
+    "guard_helpfulness": 0.252,
+    "guard_over_conservativeness": 0.179,
+    "guard_refusal": 0.164
+   },
+   "r2_pair_eval": 0.2211,
+   "r2_pair_eval_per_dim": {
+    "concealment": 0.274,
+    "confrontation_after_lie": 0.485,
+    "fabricated_action": 0.072,
+    "fabricated_citation": 0.173,
+    "fabricated_entity": 0.16,
+    "feedback_sycophancy": -0.187,
+    "harm_motivated_denial": 0.242,
+    "hint_acknowledgment": -0.103,
+    "instructed_lie": 0.351,
+    "pushback": 0.202,
+    "sandbagging": -1.646,
+    "sandbagging_stated": 0.408
+   },
+   "dose_eval": 0.1462,
+   "gap_eval": 0.3673
+  }
+ },
+ "bundle": "/content/drive/MyDrive/trust_issues_runs/exp_rahul_001_nullspace_map/Qwen3.8-27B_bf16/bundles/Qwen__Qwen3.8-27B.spipe",
+ "bundle_kb": 485.0,
+ "verify_ok": true,
+ "verify_warnings": [],
+ "submittable": true,
+ "roundtrip": {
+  "live": -11.895023345947266,
+  "loaded": -11.895023345947266,
+  "plain": -12.107086181640625
+ }
+}
