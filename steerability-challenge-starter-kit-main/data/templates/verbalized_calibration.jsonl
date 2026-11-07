@@ -1,0 +1,2 @@
+{"template_id": "t001", "format": "verbalized_calibration", "style": "direct_question", "pool": "starter", "user": "{question}"}
+{"template_id": "t002", "format": "verbalized_calibration", "style": "brief_answer", "pool": "starter", "user": "In one sentence: {question}"}

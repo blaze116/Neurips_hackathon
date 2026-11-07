@@ -1,0 +1,28 @@
+[project]
+name            = "steerability-challenge-starter-kit"
+version         = "0.2.1"
+description     = "Starter kit for the steerability challenge"
+readme          = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "steerability @ git+https://github.com/generative-computing/steerability.git@92e3098086a1bb70db078343b459831dd12040e5",
+    "pyyaml>=6.0",
+    "pandas>=2.2.3,<3.0.0",
+    "jupyter>=1.1.1",
+    "datasets>=4.7.0",
+    "huggingface_hub>=1.0",
+]
+
+[project.scripts]
+check-submission = "starterkit.check:main"
+fetch-baselines  = "starterkit.baselines:main"
+render-source-rows = "starterkit.rows:main_render"
+
+[tool.uv.build-backend]
+module-root = ""
+module-name = "starterkit"
+
+[build-system]
+requires      = ["uv_build>=0.8.9,<0.9.0"]
+build-backend = "uv_build"

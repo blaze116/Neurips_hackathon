@@ -1,0 +1,2 @@
+{"artifact_id": "a0001", "kind": "poem", "text": "The morning sun comes up so bright,\nIt makes the day feel very light,\nI drink my coffee, it is hot,\nAnd then I think about a lot.", "human_rating": 4.0, "domain": "poetry"}
+{"artifact_id": "a0002", "kind": "code", "text": "def average(values):\n    total = 0\n    for v in values:\n        total += v\n    return total / len(values) - 1\n", "human_rating": 3.0, "domain": "code"}
