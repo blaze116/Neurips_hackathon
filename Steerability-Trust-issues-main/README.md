@@ -8,6 +8,29 @@ toolkit.
 **Keep this repository private.** The competition guide asks teams not to share their methods publicly
 before results are announced. Do not push this work to a public fork, gist, or Hugging Face repository.
 
+## Which rows to test on (as of 2026-11-09)
+
+**Use `data/dev_sets/dev_v1/` for every method comparison until further notice.** Do not use the old 98-row set:
+two runs of the *unchanged* Qwen on it differed by S = -0.615 purely by chance (exp005), so it cannot tell methods
+apart.
+
+- `dev_quick.jsonl` (338 rows): a first look at a new method, to drop clearly worse ideas cheaply.
+- `dev.jsonl` (1,015 rows; contains dev_quick): the decision between the final candidates.
+
+Both cover every official leaderboard category: all 15 dishonesty types, all 6 guard areas (with extra rows for
+over-conservativeness, the guard that cost us most) and all 6 capability areas. They are slices of
+`data/v17_thin_categories/eval.jsonl`, picked by fixed rules (`data/scripts/make_dev_set.py`), never by any model's
+score. How to use them:
+
+```
+python eval/generate_answers.py --rows data/dev_sets/dev_v1/dev_quick.jsonl --model <model> --arm <name> ...
+python eval/scorer.py --rows data/dev_sets/dev_v1/dev_quick.jsonl --answers <answers.jsonl> --arm <name> --judge ...
+```
+
+Generate the unchanged model's answers (arm `unsteered`) once per model and reuse them for every method. Never tune
+on the `test` split, and never fit a method on these rows (fit on `train`). Caveat: the set is not yet calibrated
+against the leaderboard, so trust overall scores and large moves, not small differences in one category.
+
 ## How the leaderboard scores us
 
 The overall score is `S = delta − 3 × (r_side + r_guard)`. We worked this out from the public weekly boards,

@@ -34,7 +34,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "third_party"))
 from starterkit import DEV_SEED, REGIME, max_new_tokens  # noqa: E402
 
-CHUNK_ROWS = 32  # rows generated between saves
+CHUNK_ROWS = 32  # rows generated between saves (default; vLLM runs raise it with --chunk-rows)
 
 
 # ---- pure helpers (tested without a model) --------------------------------------------------------------------------
@@ -64,8 +64,10 @@ def select_rows(rows, dims=None, per_dim=None):
 
 
 def ceiling_for(row, profile="weekly"):
-    """The evaluation's token ceiling for a row: capability rows use the capability suite's ceiling."""
-    suite = "capability_dims" if row["dim"].startswith("capability_") else row["dim"]
+    """The evaluation's token ceiling for a row: capability rows use the capability suite's ceiling, and our
+    guard_system_prompt_compliance rows the kit's system_prompt_compliance guard's."""
+    suite = ("capability_dims" if row["dim"].startswith("capability_")
+             else "system_prompt_compliance" if row["dim"] == "guard_system_prompt_compliance" else row["dim"])
     return max_new_tokens(profile, suite)
 
 
@@ -213,8 +215,8 @@ def run(args):
     try:
         finished = 0
         for sample, ceiling, group in work:
-            for start in range(0, len(group), CHUNK_ROWS):
-                chunk = group[start:start + CHUNK_ROWS]
+            for start in range(0, len(group), args.chunk_rows):
+                chunk = group[start:start + args.chunk_rows]
                 # run_bundle reads the regime and the reasoning tags by model name, so pass the regime model
                 records = generate.run_bundle(pipeline, regime_model, chunk, batch_size=args.batch_size,
                                               max_new_tokens=ceiling, seed=args.seed + sample)
@@ -244,7 +246,10 @@ def main(argv=None):
     parser.add_argument("--backend", default="huggingface", choices=["huggingface", "vllm"])
     parser.add_argument("--quantize", choices=["nf4"], help="load in 4-bit (bitsandbytes) for a 40 GB GPU")
     parser.add_argument("--tensor-parallel-size", type=int)
-    parser.add_argument("--batch-size", type=int, default=8)
+    parser.add_argument("--batch-size", type=int, default=8, help="chats per generate call")
+    parser.add_argument("--chunk-rows", type=int, default=CHUNK_ROWS,
+                        help="rows generated between saves; on vLLM set it and --batch-size high (e.g. 128) so the "
+                             "engine schedules many chats at once")
     parser.add_argument("--seed", type=int, default=DEV_SEED)
     run(parser.parse_args(argv))
 

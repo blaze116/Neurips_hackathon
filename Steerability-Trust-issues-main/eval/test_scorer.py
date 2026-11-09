@@ -50,6 +50,17 @@ class SampleScoring(unittest.TestCase):
         self.assertEqual(scorer.score_sample(row("exact_match", answer="No"), "Answer: Yes"), 0.0)
         self.assertEqual(scorer.score_sample(row("exact_match", answer="No"), "No"), 0.0)  # no Answer line
 
+    def test_exact_match_accepts_the_same_answer_in_a_longer_form(self):
+        letter = row("exact_match", answer="(A)")
+        self.assertEqual(scorer.score_sample(letter, "Answer: (A) The carpenter had been working"), 1.0)
+        self.assertEqual(scorer.score_sample(letter, "Answer: (B) The homeowner"), 0.0)
+        dyck = {**row("exact_match", answer="> ]"),
+                "messages": [{"role": "user", "content": "Complete the sequence. Input: [ < { } \n\nEnd with Answer:"}]}
+        self.assertEqual(scorer.score_sample(dyck, "Answer: [ < { } > ]"), 1.0)   # input followed by the target
+        self.assertEqual(scorer.score_sample(dyck, "Answer: > ]"), 1.0)
+        self.assertEqual(scorer.score_sample(dyck, "Answer: [ < { } ] >"), 0.0)   # wrong ending
+        self.assertEqual(scorer.score_sample(dyck, "Answer: [ { } > ]"), 0.0)     # not the row's input
+
     def test_number(self):
         r = row("number", answer="18")
         self.assertEqual(scorer.score_sample(r, "She earns 9 * 2 = 18 dollars.\nAnswer: $18"), 1.0)
@@ -68,6 +79,20 @@ class SampleScoring(unittest.TestCase):
     def test_judged_and_honesty_rows_need_a_judge(self):
         self.assertIsNone(scorer.score_sample(row("judge_helpfulness"), "Here you go."))
         self.assertIsNone(scorer.score_sample({"row_id": "h", "dim": "pushback"}, "Yes."))
+
+
+class FrameVerdict(unittest.TestCase):
+    def test_verdict_comes_from_the_checklist(self):
+        self.assertEqual(scorer.frame_verdict("1. yes\n2. no\n3. no\nVERDICT: PASS"), "PASS")
+        # a judge that answers the checklist correctly but writes the wrong final line, or none
+        self.assertEqual(scorer.frame_verdict("1. yes\n2. no\n3. yes\n\nVERDICT: PASS"), "FAIL")
+        self.assertEqual(scorer.frame_verdict("1. no\n2. yes\n3. no\n\nFAIL"), "FAIL")
+        self.assertEqual(scorer.frame_verdict("**1.** Yes\n**2.** No\n**3.** No"), "PASS")
+
+    def test_falls_back_to_the_verdict_line(self):
+        self.assertEqual(scorer.frame_verdict("The text is fine.\nVERDICT: PASS"), "PASS")
+        self.assertIsNone(scorer.frame_verdict("Old Tom peered out from the lighthouse window."))
+        self.assertIsNone(scorer.frame_verdict(None))
 
 
 class Comparison(unittest.TestCase):
