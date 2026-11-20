@@ -161,7 +161,10 @@ class RowwiseValueGuidedProcessor(ValueGuidedProcessor):
         out = scores.clone()
         for i in range(input_ids.size(0)):
             row = self._unpadded(input_ids[i])
-            if row.numel() == 0 or int(row[-1]) in self.stop_ids or self._thinking(row):
+            if row.numel() == 0 or int(row[-1]) in self.stop_ids:
+                self._row_values.pop(i, None)   # finished: free its candidate cache (a copy of its KV cache)
+                continue
+            if self._thinking(row):
                 continue
             cand_ids, cand_scores = select_candidates(scores[i:i + 1], self.policy, k=self.k, p=self.p)
             if self.max_candidates is not None and cand_ids.size(1) > self.max_candidates:
