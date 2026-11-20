@@ -105,9 +105,33 @@ def diagnostics(records, arm, sample):
              "unclosed_thinking": bool(r["thinking"]) and not r["answer"]} for r in records]
 
 
+def drop_broken_tail(path):
+    """Remove a half-written last line (left by a runtime that died mid-write), so the file can be read and appended."""
+    path = Path(path)
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    while lines and lines[-1].strip():
+        try:
+            json.loads(lines[-1])
+            break
+        except json.JSONDecodeError:
+            print(f"dropping a half-written last line of {path.name} (the previous run stopped mid-write)", flush=True)
+            lines.pop()
+    if not lines or lines[-1].endswith("\n"):
+        kept = "".join(lines)
+    else:
+        kept = "".join(lines) + "\n"
+    if kept != text:
+        path.write_text(kept, encoding="utf-8")
+
+
 def done_keys(path, arm):
     """(row_id, sample) pairs already written for this arm, so a rerun skips them."""
     path = Path(path)
+    drop_broken_tail(path)
+    drop_broken_tail(path.with_name(path.stem + "_diagnostics.jsonl"))
     if not path.exists():
         return set()
     keys = set()
@@ -164,14 +188,24 @@ def model_kwargs(model, quantize=None):
     return kwargs
 
 
-def load(model, bundle=None, backend="huggingface", tensor_parallel_size=None, quantize=None):
+def load(model, bundle=None, backend="huggingface", tensor_parallel_size=None, quantize=None, engine_kwargs=None):
     """A steered pipeline: the bundle's, or an unsteered pipeline with no controls, built with the evaluation's kwargs.
 
     Bundles are loaded the way the kit's `generate.load_pipeline` loads them (same model check, same backend check),
     but with our kwargs, so a bundle can also run in 4-bit.
     """
+    import starterkit.backends as kit_backends
     from starterkit.backends import evaluation_backend, vllm_backend_spec
 
+    if engine_kwargs:
+        # one-GPU fallback: the evaluation's engine spans two GPUs, so a big model may need a shorter context or a
+        # larger memory share on one card; only the given keys change, everything else stays the kit's
+        if backend != "vllm":
+            raise ValueError("--engine-kwargs only applies to the vllm backend")
+        by_model = dict(kit_backends.VLLM_ENGINE_KWARGS_BY_MODEL)
+        by_model[model] = {**by_model.get(model, {}), **engine_kwargs}
+        kit_backends.VLLM_ENGINE_KWARGS_BY_MODEL = by_model
+        print(f"vLLM engine overrides for {model}: {engine_kwargs}", flush=True)
     if quantize and backend != "huggingface":
         raise ValueError("4-bit loading is only available on the huggingface backend")
     kwargs = model_kwargs(model, quantize)
@@ -210,7 +244,8 @@ def run(args):
     print(f"{len(rows)} rows selected; {remaining} row-samples to generate for arm {args.arm!r}", flush=True)
     if not work:
         return
-    pipeline = load(args.model, args.bundle, args.backend, args.tensor_parallel_size, args.quantize)
+    pipeline = load(args.model, args.bundle, args.backend, args.tensor_parallel_size, args.quantize,
+                    json.loads(args.engine_kwargs) if args.engine_kwargs else None)
     diagnostics_path = Path(args.out).with_name(Path(args.out).stem + "_diagnostics.jsonl")
     try:
         finished = 0
@@ -251,6 +286,8 @@ def main(argv=None):
                         help="rows generated between saves; on vLLM set it and --batch-size high (e.g. 128) so the "
                              "engine schedules many chats at once")
     parser.add_argument("--seed", type=int, default=DEV_SEED)
+    parser.add_argument("--engine-kwargs", help='JSON added to the kit\'s vLLM engine settings for this model, e.g. '
+                        '\'{"max_model_len": 16384, "gpu_memory_utilization": 0.95}\' to fit Gemma on one 80 GB GPU')
     run(parser.parse_args(argv))
 
 
