@@ -19,6 +19,9 @@ that repeats the prefix KV cache once per candidate. On Qwen3.5 / Qwen3.8 it can
    close-reasoning tag. The judge reads the answer, so this steers what is scored, keeps reasoning (and so
    capability) closer to the base model, and skips the per-step candidate forwards while thinking.
 4. `probe_method` can fit the probe with `mean_diff` instead of the toolkit's fixed `fisher`.
+5. `shift_mode="gated"` (optional; default is the toolkit's softmax shift) steers a step only when the model's own
+   top token scores on the dishonest side, and then boosts only candidates more honest than it. Fluent, honest
+   steps are left exactly as the base model would write them.
 """
 from __future__ import annotations
 
@@ -134,8 +137,10 @@ class RowwiseValueGuidedProcessor(ValueGuidedProcessor):
     """
 
     def __init__(self, probe, *, open_id: int | None = None, close_id: int | None = None,
-                 pad_id: int | None = None, stop_ids: tuple[int, ...] = (), **kwargs):
+                 pad_id: int | None = None, stop_ids: tuple[int, ...] = (), shift_mode: str = "softmax",
+                 gate: float = 0.0, **kwargs):
         super().__init__(HybridSubspaceMarginValue(probe), **kwargs)
+        self.shift_mode, self.gate = shift_mode, gate
         self.probe = probe
         self.open_id, self.close_id = open_id, close_id
         self.pad_id = pad_id
@@ -173,7 +178,13 @@ class RowwiseValueGuidedProcessor(ValueGuidedProcessor):
             ctx = StepContext(prefix_ids=row.unsqueeze(0), candidate_ids=cand_ids, lm_tokenizer=self.lm_tokenizer,
                               model=self.model, attention_mask=None)
             raw = value.score(ctx).to(scores.dtype)
-            v = _normalize(raw, self.normalize, self.invert)
+            if self.shift_mode == "gated":
+                # leave the step alone unless the model's own top token looks dishonest; then boost only the
+                # candidates more honest than it, in proportion to the margin gap
+                top = int(scores[i, cand_ids[0]].argmax())
+                v = torch.relu(raw - raw[0, top]) if float(raw[0, top]) < self.gate else torch.zeros_like(raw)
+            else:
+                v = _normalize(raw, self.normalize, self.invert)
             if self.trace is not None:
                 self.trace.append(ValueStepRecord(
                     prefix_length=int(row.numel()), candidate_ids=cand_ids.detach().cpu(),
@@ -196,6 +207,16 @@ class SASAHybridArgs(SASAArgs):
         default_factory=lambda: ["<think>", "</think>"],
         metadata={"help": "The model's open and close reasoning tags; each must be a single token."},
     )
+    shift_mode: Literal["softmax", "gated"] = field(
+        default="softmax",
+        metadata={"help": "'softmax': the toolkit's SASA shift, beta * softmax(margins) on every scored step. "
+                          "'gated': no shift unless the top candidate's margin is below `gate`; then each candidate "
+                          "gets beta * max(0, margin - top margin), so only more honest candidates are boosted."},
+    )
+    gate: float = field(
+        default=0.0,
+        metadata={"help": "For shift_mode='gated': steer a step only when the top candidate's margin is below this."},
+    )
     probe_method: Literal["fisher", "mean_diff"] = field(
         default="fisher",
         metadata={"help": "How the probe direction is fitted when `wv_path` is unset: 'fisher' (the paper's and the "
@@ -207,6 +228,8 @@ class SASAHybridArgs(SASAArgs):
         super().__post_init__()
         if self.answer_only and len(self.think_tags) != 2:
             raise ValueError("think_tags must be [open_tag, close_tag].")
+        if self.shift_mode not in ("softmax", "gated"):
+            raise ValueError(f"shift_mode must be 'softmax' or 'gated', got {self.shift_mode!r}.")
         if self.probe_method not in ("fisher", "mean_diff"):
             raise ValueError(f"probe_method must be 'fisher' or 'mean_diff', got {self.probe_method!r}.")
 
@@ -256,6 +279,7 @@ class SASAHybrid(SASA):
         _, args = super().frozen_form(state)
         return "output_control/sasa_hybrid", {
             **args, "answer_only": self.answer_only, "think_tags": list(self.think_tags),
+            "shift_mode": self.shift_mode, "gate": self.gate,
         }
 
     def fit_identity(self):
@@ -276,6 +300,8 @@ class SASAHybrid(SASA):
                 close_id=self._close_id,
                 pad_id=self.tokenizer.pad_token_id,
                 stop_ids=stop_ids,
+                shift_mode=self.shift_mode,
+                gate=self.gate,
                 policy=self.candidate_policy,
                 p=self.top_p,
                 k=self.top_k,
